@@ -1,0 +1,579 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PIMS CareRoute | WebGIS Lab</title>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+
+<style>
+:root {
+  --bg: #0b1220;
+  --panel: #131f33;
+  --line: #2b3b56;
+  --text: #edf4ff;
+  --muted: #a9bad2;
+  --teal: #35e0cb;
+  --purple: #a99aff;
+  --blue: #69a9ff;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: radial-gradient(circle at 50% 0%, #1b2c4b, #0b1220 55%);
+  font-family: "Segoe UI", Arial, sans-serif;
+  color: var(--text);
+  min-height: 100vh;
+}
+
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 26px;
+  border-bottom: 1px solid var(--line);
+  background: #0b1220;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.brand { display: flex; align-items: center; gap: 12px; }
+
+.logo {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, var(--teal), var(--blue));
+  display: grid;
+  place-items: center;
+  color: #071421;
+  font-size: 23px;
+  font-weight: 900;
+}
+
+.brand h1 { font-size: 19px; margin: 0; }
+.brand p { margin: 4px 0 0; color: var(--muted); font-size: 12px; }
+
+.status {
+  border: 1px solid #27665f;
+  color: var(--teal);
+  background: #10322f;
+  padding: 8px 12px;
+  border-radius: 30px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+main {
+  max-width: 1500px;
+  margin: auto;
+  padding: 22px;
+  display: grid;
+  grid-template-columns: 260px minmax(350px, 1fr) 290px;
+  gap: 18px;
+}
+
+.panel {
+  background: linear-gradient(160deg, #17253b, #111b2d);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  padding: 20px;
+  box-shadow: 0 12px 35px #0002;
+  min-width: 0;
+}
+
+.eyebrow {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1.8px;
+  color: var(--teal);
+  font-weight: 800;
+  margin: 0 0 12px;
+}
+
+.profile-icon {
+  height: 76px;
+  width: 76px;
+  border-radius: 22px;
+  background: linear-gradient(135deg, #284d69, #594a92);
+  display: grid;
+  place-items: center;
+  font-size: 29px;
+  font-weight: 800;
+  margin: 10px 0 15px;
+  border: 1px solid #56728f;
+}
+
+h2 { font-size: 18px; margin: 0 0 6px; }
+h3 { font-size: 14px; margin: 0 0 12px; }
+
+.muted {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.info {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.info:last-child { border-bottom: 0; }
+
+.label { color: var(--muted); font-size: 11px; margin-bottom: 5px; }
+
+.value {
+  font-size: 13px;
+  font-weight: 650;
+  overflow-wrap: anywhere;
+}
+
+.center { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+
+.map-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.map-heading h2 { font-size: 20px; }
+
+.map-wrap {
+  padding: 10px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+}
+
+.map-tools { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+
+button {
+  border: 0;
+  border-radius: 11px;
+  padding: 11px 14px;
+  font-weight: 750;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+button:hover { filter: brightness(1.1); }
+
+.primary { background: var(--teal); color: #071a22; }
+
+.secondary {
+  background: #263957;
+  color: var(--text);
+  border: 1px solid #3a5274;
+}
+
+.purple {
+  background: #302a55;
+  color: #d9d1ff;
+  border: 1px solid #51468a;
+}
+
+#map {
+  height: 490px;
+  width: 100%;
+  border-radius: 13px;
+  background: #1a2b3f;
+  z-index: 1;
+}
+
+.map-caption {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 10px 3px 0;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+
+.stat {
+  background: #101a2b;
+  border: 1px solid var(--line);
+  border-radius: 15px;
+  padding: 14px;
+}
+
+.stat strong {
+  display: block;
+  font-size: 20px;
+  color: var(--teal);
+  margin-bottom: 4px;
+}
+
+.stat span { font-size: 11px; color: var(--muted); }
+
+.hospital-mark {
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  background: #123d43;
+  border: 1px solid #24756e;
+  color: var(--teal);
+  display: grid;
+  place-items: center;
+  font-size: 27px;
+  margin: 10px 0 14px;
+}
+
+.tag {
+  display: inline-block;
+  font-size: 10px;
+  border-radius: 20px;
+  padding: 6px 9px;
+  background: #203c3b;
+  color: var(--teal);
+  margin: 5px 4px 0 0;
+}
+
+.note {
+  background: #101a2b;
+  border-radius: 12px;
+  padding: 12px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.6;
+  margin-top: 14px;
+}
+
+footer {
+  text-align: center;
+  color: #8194af;
+  font-size: 11px;
+  padding: 0 20px 20px;
+}
+
+@media (max-width: 1050px) {
+  main { grid-template-columns: 230px minmax(0, 1fr); }
+  .right { grid-column: 1 / -1; }
+  #map { height: 430px; }
+}
+
+@media (max-width: 700px) {
+  main { grid-template-columns: 1fr; padding: 12px; }
+  .right { grid-column: auto; }
+  .stats { grid-template-columns: repeat(3, 1fr); }
+  #map { height: 380px; }
+  header { padding: 14px; }
+  .panel { padding: 16px; }
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <div class="brand">
+    <div class="logo">+</div>
+    <div>
+      <h1>PIMS CareRoute</h1>
+      <p>WebGIS Hospital Navigation Dashboard</p>
+    </div>
+  </div>
+  <div class="status">● INTERACTIVE MAP</div>
+</header>
+
+<main>
+
+  <!-- LEFT PANEL: STUDENT DETAILS -->
+  <aside class="panel">
+    <p class="eyebrow">Lab Submission</p>
+    <div class="profile-icon">UA</div>
+    <h2>Umm-e-Ammarah</h2>
+    <p class="muted">GIS & Earth Observation Student</p>
+
+    <div class="info">
+      <div class="label">ARID Registration No.</div>
+      <div class="value">24-ARID-2245</div>
+    </div>
+
+    <div class="info">
+      <div class="label">Project</div>
+      <div class="value">PIMS CareRoute</div>
+    </div>
+
+    <div class="info">
+      <div class="label">Coursework</div>
+      <div class="value">WebGIS Lab</div>
+    </div>
+
+    <div class="info">
+      <div class="label">Core Technology</div>
+      <div class="value">HTML · CSS · JavaScript · Leaflet</div>
+    </div>
+
+    <div class="note">
+      Purpose: Display PIMS Hospital on an interactive web map and help users identify their current position in relation to the hospital.
+    </div>
+  </aside>
+
+  <!-- CENTER PANEL: INTERACTIVE MAP -->
+  <section class="center">
+    <div class="map-heading">
+      <div>
+        <p class="eyebrow">Geospatial Interface</p>
+        <h2>Hospital Location & Navigation</h2>
+      </div>
+      <span class="muted">Islamabad, Pakistan</span>
+    </div>
+
+    <div class="map-wrap">
+      <div class="map-tools">
+        <button class="primary" id="locateBtn">◎ Find My Location</button>
+        <button class="secondary" id="hospitalBtn">⌖ Show PIMS</button>
+        <button class="purple" id="resetBtn">↺ Reset Map</button>
+      </div>
+
+      <div id="map"></div>
+
+      <div class="map-caption">
+        <span>Pan and zoom to explore the map.</span>
+        <span id="mapStatus">Loading map...</span>
+      </div>
+    </div>
+
+    <div class="stats">
+      <div class="stat">
+        <strong id="distance">—</strong>
+        <span>Distance to PIMS</span>
+      </div>
+
+      <div class="stat">
+        <strong id="coords">33.7182° N</strong>
+        <span>Latitude</span>
+      </div>
+
+      <div class="stat">
+        <strong id="zoomLevel">13</strong>
+        <span>Current Zoom</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- RIGHT PANEL: HOSPITAL INFORMATION -->
+  <aside class="panel right">
+    <div>
+      <p class="eyebrow">Destination Details</p>
+      <div class="hospital-mark">✚</div>
+
+      <h2>Pakistan Institute of Medical Sciences</h2>
+      <p class="muted">PIMS Hospital · G-8/3, Islamabad, Pakistan</p>
+
+      <div class="info">
+        <div class="label">Map Coordinates</div>
+        <div class="value">33.7182° N, 73.0687° E</div>
+      </div>
+
+      <div class="info">
+        <div class="label">Destination Type</div>
+        <div class="value">Public-Sector Teaching Hospital</div>
+      </div>
+
+      <div class="info">
+        <div class="label">Map Marker</div>
+        <div class="value">PIMS Hospital</div>
+      </div>
+
+      <span class="tag">Healthcare</span>
+      <span class="tag">Esri World Street Map</span>
+      <span class="tag">Leaflet</span>
+    </div>
+
+    <div>
+      <p class="eyebrow" style="margin-top:22px">How to Use</p>
+
+      <div class="info">
+        <div class="value">01 · Explore</div>
+        <div class="muted">Zoom and pan around Islamabad using the map controls.</div>
+      </div>
+
+      <div class="info">
+        <div class="value">02 · Locate</div>
+        <div class="muted">Allow browser location permission to show your position.</div>
+      </div>
+
+      <div class="info">
+        <div class="value">03 · Measure</div>
+        <div class="muted">View the straight-line distance between your location and PIMS.</div>
+      </div>
+
+      <div class="note">
+        Map tiles provided by Esri. An internet connection is required to load the map and Leaflet library.
+      </div>
+    </div>
+  </aside>
+
+</main>
+
+<footer>
+  WebGIS Lab Project · PIMS CareRoute · Built with Leaflet.js and Esri World Street Map
+</footer>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+// INITIALIZE LEAFLET MAP
+const pims = [33.7182, 73.0687];
+
+const map = L.map('map').setView(pims, 13);
+
+// ESRI WORLD STREET MAP TILE LAYER
+L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
+  maxZoom: 19,
+  attribution: 'Tiles &copy; Esri &mdash; Source: Esri, DeLorme, NAVTEQ, USGS, Intermap, iPC, NRCAN, Esri Japan, METI, Esri China (Hong Kong), TomTom, 2012'
+}).addTo(map);
+
+// CUSTOM HOSPITAL MARKER
+const hospitalIcon = L.divIcon({
+  className: '',
+  html: '<div style="width:38px;height:38px;border-radius:50% 50% 50% 8px;transform:rotate(-45deg);background:#35e0cb;border:3px solid #eafffc;box-shadow:0 3px 16px #0008;display:grid;place-items:center"><span style="transform:rotate(45deg);font-size:20px;color:#09202a;font-weight:900">+</span></div>',
+  iconSize: [38, 38],
+  iconAnchor: [19, 38],
+  popupAnchor: [0, -36]
+});
+
+// CUSTOM USER LOCATION MARKER
+const userIcon = L.divIcon({
+  className: '',
+  html: '<div style="width:20px;height:20px;background:#69a9ff;border:4px solid white;border-radius:50%;box-shadow:0 0 0 7px #69a9ff44"></div>',
+  iconSize: [20, 20],
+  iconAnchor: [10, 10]
+});
+
+// ADD PIMS HOSPITAL TO MAP
+const hospital = L.marker(pims, { icon: hospitalIcon })
+  .addTo(map)
+  .bindPopup('<b>PIMS Hospital</b><br>G-8/3, Islamabad, Pakistan');
+
+let userMarker = null;
+let connector = null;
+
+const status = document.getElementById('mapStatus');
+
+// CALCULATE STRAIGHT-LINE DISTANCE WITHOUT A ROUTING API
+function distanceKm(a, b) {
+  const R = 6371;
+  const rad = x => x * Math.PI / 180;
+
+  const dLat = rad(b[0] - a[0]);
+  const dLon = rad(b[1] - a[1]);
+
+  const x =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(rad(a[0])) *
+    Math.cos(rad(b[0])) *
+    Math.sin(dLon / 2) ** 2;
+
+  return 2 * R * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x));
+}
+
+function updateZoom() {
+  document.getElementById('zoomLevel').textContent = map.getZoom();
+}
+
+map.on('zoomend', updateZoom);
+
+// SHOW PIMS HOSPITAL
+document.getElementById('hospitalBtn').addEventListener('click', function() {
+  map.setView(pims, 15);
+  hospital.openPopup();
+  status.textContent = 'Showing PIMS Hospital';
+});
+
+// RESET MAP
+document.getElementById('resetBtn').addEventListener('click', function() {
+  if (userMarker) {
+    map.removeLayer(userMarker);
+    userMarker = null;
+  }
+
+  if (connector) {
+    map.removeLayer(connector);
+    connector = null;
+  }
+
+  document.getElementById('distance').textContent = '—';
+  document.getElementById('coords').textContent = '33.7182° N';
+
+  map.setView(pims, 13);
+  hospital.closePopup();
+  status.textContent = 'Map reset to PIMS Hospital';
+  updateZoom();
+});
+
+// FIND USER LOCATION
+document.getElementById('locateBtn').addEventListener('click', function() {
+  if (!navigator.geolocation) {
+    status.textContent = 'Geolocation is not supported by this browser.';
+    return;
+  }
+
+  status.textContent = 'Requesting location permission...';
+
+  navigator.geolocation.getCurrentPosition(function(position) {
+    const here = [
+      position.coords.latitude,
+      position.coords.longitude
+    ];
+
+    if (userMarker) map.removeLayer(userMarker);
+    if (connector) map.removeLayer(connector);
+
+    userMarker = L.marker(here, { icon: userIcon })
+      .addTo(map)
+      .bindPopup('<b>Your approximate location</b>');
+
+    // DASHED LINE SHOWS DIRECT DISTANCE, NOT A ROAD ROUTE
+    connector = L.polyline([here, pims], {
+      color: '#a99aff',
+      weight: 4,
+      dashArray: '8 8',
+      opacity: 0.95
+    }).addTo(map);
+
+    const distance = distanceKm(here, pims);
+    document.getElementById('distance').textContent = distance.toFixed(2) + ' km';
+
+    document.getElementById('coords').textContent =
+      here[0].toFixed(4) + '° ' + (here[0] >= 0 ? 'N' : 'S');
+
+    map.fitBounds(L.latLngBounds([here, pims]).pad(0.18));
+
+    status.textContent = 'Your location shown; dashed line represents direct distance.';
+    userMarker.openPopup();
+    updateZoom();
+
+  }, function(error) {
+    if (error.code === 1) {
+      status.textContent = 'Location permission denied. Allow location in browser settings.';
+    } else {
+      status.textContent = 'Could not get location. Try using localhost or HTTPS.';
+    }
+  }, {
+    enableHighAccuracy: true,
+    timeout: 12000,
+    maximumAge: 60000
+  });
+});
+
+// MAKE SURE MAP RENDERS CORRECTLY
+setTimeout(function() {
+  map.invalidateSize();
+  updateZoom();
+  status.textContent = 'PIMS Hospital marker loaded';
+}, 300);
+</script>
+
+</body>
+</html>
